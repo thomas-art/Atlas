@@ -186,8 +186,16 @@ Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\R
 }
 
 # Set sound scheme to 'No Sounds'
-New-ItemProperty -Path HKCU:\AppEvents\Schemes -Name "(Default)" -Value ".None" -Force
-Get-ChildItem -Path "HKCU:\AppEvents\Schemes\Apps" | Get-ChildItem | Get-ChildItem | Where-Object {$_.PSChildName -eq ".Current"} | Set-ItemProperty -Name "(Default)" -Value ""
+Get-ChildItem -Path "Registry::HKEY_USERS\" | ForEach-Object {
+    $userKey = $_.Name
+    # If the "Volatile Environment" key exists, that means it is a proper user. Built in accounts/SIDs do not have this key.
+    if (Test-Path "$userKey\Volatile Environment" -or Test-Path "$userKey\AME_UserHive_") {
+        New-PSDrive -Name HKU -PSProvider Registry -Root HKEY_USERS | Out-Null
+        $schemesPath = "HKU:$userKey\AppEvents\Schemes"
+        New-ItemProperty -Path $schemesPath -Name "(Default)" -Value ".None" -Force | Out-Null
+        Get-ChildItem "$schemesPath\Apps" | Get-ChildItem | Get-ChildItem | Where-Object {$_.PSChildName -eq '.Current'} | Set-ItemProperty -Name "(Default)" -Value ""
+    }
+}
 
 # Detect hard drive - Solid State Drive (SSD) or Hard Disk Drive (HDD)
 $diskDrive = (Get-PhysicalDisk | ForEach-Object { $physicalDisk = $_ ; $physicalDisk | Get-Disk | Get-Partition | Where-Object { $_.DriveLetter -eq 'C'} | Select-Object @{n='MediaType';e={$physicalDisk.MediaType}}}).MediaType
