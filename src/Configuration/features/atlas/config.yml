@@ -2725,9 +2725,10 @@ actions:
 
   - !writeStatus: {status: 'Finalizing configuration'}
   - !run:
+    exe: 'powershell.exe'
+    args: '-NoP -File FINALIZE.ps1'
     exeDir: true
-    exe: 'FINALIZE.cmd'
-    weight: 100
+    wait: true
 
   - !writeStatus: {status: 'Cleaning start menu'}
   - !run:

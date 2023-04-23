@@ -1,10 +1,11 @@
 # Enable MSI mode on USB, GPU, Storage controllers and network adapters
 # Deleting DevicePriority sets the priority to Undefined
 $deviceClasses = @(
+    "CIM_NetworkAdapter",
     "CIM_USBController",
     "CIM_VideoController",
-    "CIM_NetworkAdapter",
-    "Win32_PnPEntity"
+    "Win32_PnPEntity",
+    "Win32_SoundDevice"
 )
 
 foreach ($deviceClass in $deviceClasses) {
@@ -159,30 +160,37 @@ foreach ($prop in $adapterProp) {
 # Disable other network adapter pover saving
 # Dump of all possible settings found.
 # TO DO: revise and document each setting
-# Set-ItemProperty -Path "$classKey" -Name "PnPCapabilities" -Value 24 -Type DWord -Force
-# Set-ItemProperty -Path "$classKey" -Name "MIMOPowerSaveMode" -Value 3 -Type DWord -Force
-# Set-ItemProperty -Path "$classKey" -Name "WolShutdownLinkSpeed" -Value 2 -Type DWord -Force
-# Set-ItemProperty -Path "$classKey" -Name "EeeCtrlMode" -Value 2 -Type DWord -Force
-# Set-ItemProperty -Path "$classKey" -Name "GphyGreenMode" -Value 4 -Type DWord -Force
-# Set-ItemProperty -Path "$classKey" -Name "DisableDelayedPowerUp" -Value 1 -Type DWord -Force
+Set-ItemProperty -Path "$classKey" -Name "PnPCapabilities" -Value 24 -Type DWord -Force
+Set-ItemProperty -Path "$classKey" -Name "MIMOPowerSaveMode" -Value 3 -Type DWord -Force
+Set-ItemProperty -Path "$classKey" -Name "WolShutdownLinkSpeed" -Value 2 -Type DWord -Force
+Set-ItemProperty -Path "$classKey" -Name "EeeCtrlMode" -Value 2 -Type DWord -Force
+Set-ItemProperty -Path "$classKey" -Name "GphyGreenMode" -Value 4 -Type DWord -Force
+Set-ItemProperty -Path "$classKey" -Name "DisableDelayedPowerUp" -Value 1 -Type DWord -Force
 
 ## Miscellaneous
 
 # Debloat 'Send To' context menu, hidden files do not show up in the 'Send To' context menu
-Set-ItemProperty -Path "$env:APPDATA\Microsoft\Windows\SendTo\Bluetooth File Transfer.LNK" -Name "Attributes" -Value ([IO.FileAttributes]::Hidden)
-Set-ItemProperty -Path "$env:APPDATA\Microsoft\Windows\SendTo\Mail Recipient.MAPIMail" -Name "Attributes" -Value ([IO.FileAttributes]::Hidden)
-Set-ItemProperty -Path "$env:APPDATA\Microsoft\Windows\SendTo\Documents.mydocs" -Name "Attributes" -Value ([IO.FileAttributes]::Hidden)
+Set-ItemProperty -Path "$($env:SystemDrive)$($env:HOMEPATH)\AppData\Roaming\Microsoft\Windows\SendTo\Bluetooth File Transfer.LNK" -Name "Attributes" -Value ([IO.FileAttributes]::Hidden)
+Set-ItemProperty -Path "$($env:SystemDrive)$($env:HOMEPATH)\AppData\Roaming\Microsoft\Windows\SendTo\Mail Recipient.MAPIMail" -Name "Attributes" -Value ([IO.FileAttributes]::Hidden)
+Set-ItemProperty -Path "$($env:SystemDrive)$($env:HOMEPATH)\AppData\Roaming\\Microsoft\Windows\SendTo\Documents.mydocs" -Name "Attributes" -Value ([IO.FileAttributes]::Hidden)
 
 # Disable audio exclusive mode on capture devices
-Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Capture" -Recurse | ForEach-Object {
-    Set-ItemProperty $_.PSPath -Name "{b3f8fa53-0004-438e-9003-51a46e139bfc},3" -Value 0
-    Set-ItemProperty $_.PSPath -Name "{b3f8fa53-0004-438e-9003-51a46e139bfc},4" -Value 0
+$audioKeys = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Capture", "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render"
+foreach ($key in $audioKeys) {
+    Get-ChildItem -Path $key | ForEach-Object {
+        $subkey = $_.PSPath
+        Set-ItemProperty -Path "$($subkey)\Properties" -Name "{b3f8fa53-0004-438e-9003-51a46e139bfc},3" -Value 0 -Type DWord -Force
+        Set-ItemProperty -Path "$($subkey)\Properties" -Name "{b3f8fa53-0004-438e-9003-51a46e139bfc},4" -Value 0 -Type DWord -Force
+    }
 }
 
-# Disable audio exclusive mode on playback devices
-Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render" -Recurse | ForEach-Object {
-    Set-ItemProperty $_.PSPath -Name "{b3f8fa53-0004-438e-9003-51a46e139bfc},3" -Value 0
-    Set-ItemProperty $_.PSPath -Name "{b3f8fa53-0004-438e-9003-51a46e139bfc},4" -Value 0
+# Disable all audio enhancements in mmsys.cpl (audio settings)
+$audioKeys = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Capture", "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render"
+foreach ($key in $audioKeys) {
+    Get-ChildItem -Path $key | ForEach-Object {
+        $subkey = $_.PSPath
+        Set-ItemProperty -Path "$($subkey)\FxProperties" -Name "{1da5d803-d492-4edd-8c23-e0c0ffee7f0e},5" -Value 1 -Type DWord -Force
+    }
 }
 
 # Set sound scheme to 'No Sounds'
