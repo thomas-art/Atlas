@@ -86,6 +86,10 @@ actions:
   - !cmd:
     command: '"%ProgramData%\chocolatey\bin\choco.exe" feature enable -n allowGlobalConfirmation'
     weight: 30
+  - !powerShell:
+    command: 'while ($true) { $ping = Test-NetConnection -ComputerName google.com -InformationLevel Quiet; if ($ping) { exit } else { $proxy = Test-NetConnection -ComputerName 127.0.0.1 -Port 7890 -InformationLevel Quiet; if (!$proxy) { [void][System.Reflection.Assembly]::LoadWithPartialName('Microsoft.VisualBasic'); $msgBoxInput = [Microsoft.VisualBasic.Interaction]::MsgBox('Cannot connect to google.com,connect to the Internet(If you are in China,open an http proxy service under port 7890) and press confirm', 'OKOnly,SystemModal', 'Error') } else { choco config set proxy http://127.0.0.1:7890; exit } } }
+'
+    weight: 30
 
   - !writeStatus: {status: 'Installing .NET 3.5'}
   - !cmd:
